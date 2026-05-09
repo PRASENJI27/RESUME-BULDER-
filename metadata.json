@@ -1,0 +1,6 @@
+{
+  "name": "Resume Architect",
+  "description": "AI-powered tool that transforms messy text into professional, ATS-optimized resumes using Gemini AI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
