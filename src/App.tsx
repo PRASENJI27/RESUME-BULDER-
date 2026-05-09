@@ -22,7 +22,7 @@ import { generateResume } from "./lib/gemini";
 import { ResumeData } from "./types";
 import ResumePreview from "./components/ResumePreview";
 
-type ViewState = "landing" | "dashboard" | "loading" | "preview";
+type ViewState = "landing" | "dashboard" | "loading" | "preview" | "edit-fields";
 
 export default function App() {
   const [view, setView] = useState<ViewState>(() => {
@@ -63,6 +63,22 @@ I'm looking for a Lead role.`;
     setResumeData(null);
     setRawInput("");
     setView("landing");
+  };
+
+  const handleUpdateField = (path: string, value: any) => {
+    if (!resumeData) return;
+    const newData = { ...resumeData };
+    
+    // Simple path updater for the nested object
+    if (path === "name") newData.name = value;
+    if (path === "profession") newData.profession = value;
+    if (path === "summary") newData.summary = value;
+    if (path.startsWith("contact.")) {
+      const field = path.split(".")[1] as keyof typeof newData.contact;
+      newData.contact = { ...newData.contact, [field]: value };
+    }
+    
+    setResumeData(newData);
   };
 
   const handleGenerate = async () => {
@@ -246,7 +262,15 @@ I'm looking for a Lead role.`;
                     className="w-full h-80 p-6 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600 transition-all text-lg font-mono text-slate-600 resize-none"
                   />
                   
-                  <div className="mt-8 flex items-center justify-end">
+                  <div className="mt-8 flex items-center justify-end gap-4">
+                    {resumeData && (
+                      <button 
+                        onClick={() => setView("preview")}
+                        className="px-6 py-4 border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all"
+                      >
+                        Check Existing Draft
+                      </button>
+                    )}
                     <button 
                       onClick={handleGenerate}
                       disabled={!rawInput.trim()}
@@ -348,6 +372,14 @@ I'm looking for a Lead role.`;
                       Export as PDF
                     </button>
                     
+                    <button 
+                      onClick={() => setView("edit-fields")}
+                      className="w-full py-3 bg-white/10 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-white/20 transition-colors border border-white/10"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Edit Details
+                    </button>
+                    
                     {isIframe && (
                       <div className="mt-4 p-3 bg-amber-50 border border-amber-100 rounded-xl">
                         <p className="text-[10px] text-amber-800 font-medium leading-tight mb-2">
@@ -402,6 +434,190 @@ I'm looking for a Lead role.`;
                       <ResumePreview data={resumeData} />
                     </div>
                   </div>
+                </div>
+              </div>
+            </motion.section>
+          )}
+
+          {/* Edit Fields View */}
+          {view === "edit-fields" && resumeData && (
+            <motion.section
+              key="edit-fields"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-4xl mx-auto px-6 py-12"
+            >
+              <div className="mb-8 flex items-center justify-between">
+                <div>
+                  <button 
+                    onClick={() => setView("preview")}
+                    className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-medium mb-2"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to Preview
+                  </button>
+                  <h2 className="text-3xl font-display font-bold">Refine Your Details</h2>
+                </div>
+                <button 
+                  onClick={() => setView("preview")}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-colors"
+                >
+                  Save & Preview
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Basic Info */}
+                <div className="bento-card space-y-4">
+                  <h3 className="status-tag text-blue-600">Basic Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase">Full Name</label>
+                      <input 
+                        type="text" 
+                        value={resumeData.name}
+                        onChange={(e) => handleUpdateField("name", e.target.value)}
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600 outline-none"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase">Profession</label>
+                      <input 
+                        type="text" 
+                        value={resumeData.profession}
+                        onChange={(e) => handleUpdateField("profession", e.target.value)}
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-400 uppercase">Summary</label>
+                    <textarea 
+                      value={resumeData.summary}
+                      onChange={(e) => handleUpdateField("summary", e.target.value)}
+                      className="w-full h-32 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600 outline-none resize-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Experience Info */}
+                <div className="bento-card space-y-4">
+                  <h3 className="status-tag text-blue-600">Experience</h3>
+                  <div className="space-y-6">
+                    {resumeData.experience.map((exp, idx) => (
+                      <div key={idx} className="p-4 border border-slate-100 rounded-2xl bg-slate-50/50 space-y-3">
+                        <div className="grid grid-cols-2 gap-4">
+                          <input 
+                            placeholder="Job Title"
+                            value={exp.title}
+                            onChange={(e) => {
+                              const newExp = [...resumeData.experience];
+                              newExp[idx].title = e.target.value;
+                              setResumeData({...resumeData, experience: newExp});
+                            }}
+                            className="bg-white p-2 text-sm border border-slate-200 rounded-lg outline-none"
+                          />
+                          <input 
+                            placeholder="Company"
+                            value={exp.company}
+                            onChange={(e) => {
+                              const newExp = [...resumeData.experience];
+                              newExp[idx].company = e.target.value;
+                              setResumeData({...resumeData, experience: newExp});
+                            }}
+                            className="bg-white p-2 text-sm border border-slate-200 rounded-lg outline-none"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <input 
+                            placeholder="Duration"
+                            value={exp.duration}
+                            onChange={(e) => {
+                              const newExp = [...resumeData.experience];
+                              newExp[idx].duration = e.target.value;
+                              setResumeData({...resumeData, experience: newExp});
+                            }}
+                            className="bg-white p-2 text-xs font-mono border border-slate-200 rounded-lg outline-none"
+                          />
+                          <input 
+                            placeholder="Location"
+                            value={exp.location}
+                            onChange={(e) => {
+                              const newExp = [...resumeData.experience];
+                              newExp[idx].location = e.target.value;
+                              setResumeData({...resumeData, experience: newExp});
+                            }}
+                            className="bg-white p-2 text-xs border border-slate-200 rounded-lg outline-none"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Skills Info */}
+                <div className="bento-card space-y-4">
+                  <h3 className="status-tag text-blue-600">Skills (Comma Separated)</h3>
+                  <textarea 
+                    value={resumeData.skills.join(", ")}
+                    onChange={(e) => {
+                      const skills = e.target.value.split(",").map(s => s.trim()).filter(s => s !== "");
+                      setResumeData({...resumeData, skills});
+                    }}
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600 outline-none resize-none"
+                    placeholder="React, Node.js, AWS..."
+                  />
+                </div>
+
+                {/* Contact Info */}
+                <div className="bento-card space-y-4">
+                  <h3 className="status-tag text-blue-600">Contact Details</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase">Email</label>
+                      <input 
+                        type="email" 
+                        value={resumeData.contact.email}
+                        onChange={(e) => handleUpdateField("contact.email", e.target.value)}
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600 outline-none"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase">Phone</label>
+                      <input 
+                        type="text" 
+                        value={resumeData.contact.phone}
+                        onChange={(e) => handleUpdateField("contact.phone", e.target.value)}
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600 outline-none"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase">LinkedIn</label>
+                      <input 
+                        type="text" 
+                        value={resumeData.contact.linkedin}
+                        onChange={(e) => handleUpdateField("contact.linkedin", e.target.value)}
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600 outline-none"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase">Location</label>
+                      <input 
+                        type="text" 
+                        value={resumeData.contact.location || ""}
+                        onChange={(e) => handleUpdateField("contact.location", e.target.value)}
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600 outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center gap-4">
+                  <Sparkles className="w-6 h-6 text-blue-600" />
+                  <p className="text-xs font-medium text-blue-800">
+                    Pro-tip: Keep your summary concise and result-oriented. Your changes are automatically saved to your browser.
+                  </p>
                 </div>
               </div>
             </motion.section>

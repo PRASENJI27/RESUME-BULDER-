@@ -38,38 +38,39 @@
 /* Print specific styles */
 @media print {
   @page {
-    margin: 0;
+    margin: 10mm;
     size: auto;
   }
 
   body {
     background-color: white !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .no-print {
     display: none !important;
   }
 
-  /* Hide everything during print */
-  body * {
-    visibility: hidden !important;
+  /* Hide everything by default */
+  body > * {
+    display: none !important;
   }
 
-  /* Show only the resume and its contents */
-  #resume-to-print,
-  #resume-to-print * {
+  /* Specifically show the container of the resume */
+  #resume-to-print, #resume-to-print * {
+    display: block !important;
     visibility: visible !important;
   }
 
   #resume-to-print {
+    display: block !important;
     position: absolute !important;
-    left: 0 !important;
     top: 0 !important;
+    left: 0 !important;
     width: 100% !important;
-    min-height: auto !important;
-    padding: 1.5rem !important; /* Reduced padding for print */
+    height: auto !important;
+    padding: 0 !important;
     margin: 0 !important;
     box-shadow: none !important;
     border: none !important;
